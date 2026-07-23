@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Value Investing Analyzer</title>
+<style>
+  :root{
+    --bg:#0c0f0c;
+    --bg2:#111511;
+    --panel:#171c17;
+    --panel2:#1d241d;
+    --line:#2a332a;
+    --line2:#374237;
+    --green:#7ec13d;
+    --green-d:#6cb52e;
+    --green-l:#9ede55;
+    --label:#8fd14f;
+    --text:#e9ece9;
+    --muted:#96a196;
+    --muted2:#6f796f;
+    --pass:#3ec46d;
+    --fail:#f0544a;
+    --amber:#f4b942;
+    --blue:#54a0d6;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%,#16211477,transparent),var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:var(--green-l);text-decoration:none}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 18px 80px}
+
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#0c0f0cf7,#0c0f0cdd);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar-inner{max-width:1280px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+  .brand .logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--green);color:#0b160b;font-weight:900;font-size:15px}
+  .brand small{display:block;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-top:1px}
+  .spacer{flex:1}
+
+  .stock-select{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  select,input,button,textarea{font-family:inherit;font-size:14px}
+  select.pick{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:9px;padding:8px 12px;font-weight:700;min-width:160px;cursor:pointer}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:9px;padding:8px 12px;cursor:pointer;font-weight:600;transition:.15s;white-space:nowrap}
+  .btn:hover{background:#26302650;border-color:var(--green-d)}
+  .btn.primary{background:var(--green);color:#0b160b;border-color:var(--green);font-weight:800}
+  .btn.primary:hover{background:var(--green-l)}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:5px 9px;font-size:12.5px}
+  .btn.danger:hover{border-color:var(--fail);color:var(--fail)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .fetchbar{display:flex;align-items:center;gap:6px}
+  .fetchbar input{background:#0e120e;border:1px solid var(--line2);color:var(--text);border-radius:9px;padding:8px 11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;width:118px}
+  .fetchbar input:focus{outline:none;border-color:var(--green)}
+  /* source banner */
+  .srcbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 15px;margin:14px 2px 0;font-size:12.5px}
+  .srcbar .dot{width:8px;height:8px;border-radius:50%;background:var(--pass);box-shadow:0 0 8px var(--pass);flex:none}
+  .srcbar .lbl{color:var(--muted)}
+  .srcbar b{color:var(--text)}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid}
+  .chip.est{color:var(--amber);border-color:#5a4a12;background:#2119002e}
+  .chip.man{color:var(--blue);border-color:#123a52;background:#0a1c2a4d}
+
+  /* Header summary card */
+  .head{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin:22px 2px 6px}
+  .head .tk{font-size:34px;font-weight:900;letter-spacing:.5px}
+  .head .nm{color:var(--muted);font-weight:600;font-size:15px;margin-top:2px}
+  .head .price{font-size:30px;font-weight:800}
+  .head .price small{font-size:13px;color:var(--muted);font-weight:600;display:block;text-transform:uppercase;letter-spacing:.5px}
+  .head .mc{font-size:20px;font-weight:800}
+  .head .mc small{font-size:11px;color:var(--muted);font-weight:600;display:block;text-transform:uppercase;letter-spacing:.5px}
+  .verdict-chip{padding:7px 14px;border-radius:999px;font-weight:800;font-size:13px;letter-spacing:.3px;border:1.5px solid}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;margin:20px 0 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tab{padding:11px 18px;cursor:pointer;font-weight:700;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:.15s;font-size:14.5px}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--green-l);border-bottom-color:var(--green)}
+
+  .view{display:none;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Metric grid */
+  .metric-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:1050px){.metric-cols{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:620px){.metric-cols{grid-template-columns:1fr}}
+  .mcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .mcard h3{margin:0;padding:11px 14px;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);background:#12161263;border-bottom:1px solid var(--line);font-weight:700}
+  .mrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 14px;border-bottom:1px solid #20272060}
+  .mrow:last-child{border-bottom:none}
+  .mrow .k{color:var(--label);font-weight:600;font-size:13.5px}
+  .mrow .v{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+  .mrow .v.pos{color:var(--pass)}
+  .mrow .v.neg{color:var(--fail)}
+  .mrow .v.na{color:var(--muted2);font-weight:600}
+  .hint{color:var(--muted2);font-size:11px;font-weight:600;margin-left:6px}
+
+  /* Pillars */
+  .pillar-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px}
+  .score-ring{position:relative;width:78px;height:78px;flex:none}
+  .score-ring svg{transform:rotate(-90deg)}
+  .score-ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:20px}
+  .score-ring .num small{font-size:10px;color:var(--muted);font-weight:700}
+  .pillar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:1050px){.pillar-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.pillar-grid{grid-template-columns:1fr}}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:var(--radius);padding:14px 15px;position:relative;cursor:default}
+  .pcard.pass{border-left-color:var(--pass)}
+  .pcard.fail{border-left-color:var(--fail)}
+  .pcard .ptitle{font-weight:700;font-size:13px;color:var(--text);padding-right:30px}
+  .pcard .prule{font-size:11.5px;color:var(--muted2);font-weight:600;margin-top:2px}
+  .pcard .pval{font-size:23px;font-weight:900;margin-top:10px;font-variant-numeric:tabular-nums}
+  .pcard .badge{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#0b160b}
+  .pcard.pass .badge{background:var(--pass)}
+  .pcard.fail .badge{background:var(--fail)}
+  .pcard .pexpl{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.4;display:none}
+  .pcard.open .pexpl{display:block}
+  .pcard .more{font-size:11px;color:var(--green-l);font-weight:700;cursor:pointer;margin-top:8px;user-select:none}
+  .note{background:#1a140033;border:1px solid #4a3c0f;border-radius:10px;padding:12px 15px;color:#e8d9a8;font-size:13px;margin-top:16px}
+  .note b{color:var(--amber)}
+
+  /* Analyzer */
+  .an-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
+  @media(max-width:900px){.an-grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .panel h2{margin:0 0 4px;font-size:16px;font-weight:800}
+  .panel .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+  .an-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .field select,.field input{background:var(--panel2);border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:7px 10px;font-weight:700}
+
+  table.assume{width:100%;border-collapse:collapse}
+  table.assume th,table.assume td{padding:8px 6px;text-align:center;font-size:13px}
+  table.assume thead th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--line)}
+  table.assume .rowlabel{text-align:left;font-weight:700;color:var(--text);white-space:nowrap}
+  table.assume .rowlabel .rl-sub{display:block;font-size:10.5px;color:var(--muted2);font-weight:600}
+  table.assume .hist{color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700;font-size:12.5px}
+  table.assume tbody tr{border-bottom:1px solid #1e251e60}
+  .group-head td{text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;color:var(--green-l);font-weight:800;padding-top:14px;text-align:left}
+  .cell-in{width:66px;background:#0e120e;border:1px solid var(--line2);color:var(--text);border-radius:7px;padding:6px 4px 6px 8px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+  .cell-in:focus{outline:none;border-color:var(--green);background:#10160f}
+  .colL{color:var(--fail)}.colM{color:var(--amber)}.colH{color:var(--pass)}
+
+  .results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px}
+  .rescard{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px;text-align:center}
+  .rescard .rlab{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:8px}
+  .rescard .rval{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums}
+  .rescard .rsmall{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+  .rescard .rret{font-size:14px;font-weight:800;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+  .val-up{color:var(--pass)}.val-dn{color:var(--fail)}
+
+  .kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e251e60;font-size:13px}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:800;font-variant-numeric:tabular-nums}
+
+  /* projection chart */
+  .chartbox{margin-top:8px}
+  svg.proj{width:100%;height:190px;display:block}
+
+  /* Data entry modal */
+  .modal-bg{position:fixed;inset:0;background:#000a;backdrop-filter:blur(3px);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--line2);border-radius:16px;max-width:900px;width:100%;box-shadow:var(--shadow)}
+  .modal-h{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg2);z-index:2;border-radius:16px 16px 0 0}
+  .modal-h h2{margin:0;font-size:18px}
+  .modal-b{padding:20px 22px}
+  .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px}
+  @media(max-width:760px){.form-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+  .fg{display:flex;flex-direction:column;gap:4px}
+  .fg label{font-size:11.5px;color:var(--muted);font-weight:700}
+  .fg label .u{color:var(--muted2);font-weight:600}
+  .fg input{background:#0e120e;border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:8px 10px;font-weight:700}
+  .fg input:focus{outline:none;border-color:var(--green)}
+  .sectlabel{grid-column:1/-1;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--green-l);font-weight:800;margin-top:8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .modal-f{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg2);border-radius:0 0 16px 16px}
+
+  /* Guide */
+  .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.guide-grid{grid-template-columns:1fr}}
+  .gcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .gcard h3{margin:0 0 8px;color:var(--green-l);font-size:14px}
+  .gcard p{margin:0 0 8px;color:var(--muted);font-size:13px;line-height:1.5}
+  .tenets{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:6px}
+  @media(max-width:820px){.tenets{grid-template-columns:1fr 1fr}}
+  .tenet{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:14px;font-weight:700;font-size:13px;text-align:center}
+  .tenet span{display:block;color:var(--green);font-size:22px;font-weight:900;margin-bottom:6px}
+  .disc{color:var(--muted2);font-size:11.5px;margin-top:22px;text-align:center;line-height:1.5}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#0b160b;font-weight:800;padding:11px 20px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:100;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo">V</span>
+      <div>Value Investing Analyzer<small>Real Numbers · 8 Pillars · Stock Analyzer</small></div>
+    </div>
+    <div class="fetchbar">
+      <input id="tickerIn" placeholder="Ticker" autocomplete="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')fetchTicker()">
+      <button class="btn primary sm" id="fetchBtn" onclick="fetchTicker()">⟳ Fetch live</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="stock-select">
+      <select class="pick" id="stockPick" onchange="selectStock(this.value)"></select>
+      <button class="btn sm" onclick="openEdit(false)">✎ Edit</button>
+      <button class="btn sm" onclick="openEdit(true)">＋ New</button>
+      <button class="btn sm" onclick="duplicateStock()">⧉ Copy</button>
+      <button class="btn sm danger" onclick="deleteStock()">🗑</button>
+      <button class="btn sm ghost" onclick="exportJSON()">⭳ Export</button>
+      <button class="btn sm ghost" onclick="document.getElementById('importFile').click()">⭱ Import</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head" id="head"></div>
+  <div id="srcBanner"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-v="numbers" onclick="switchTab('numbers')">Real Numbers</div>
+    <div class="tab" data-v="pillars" onclick="switchTab('pillars')">8 Pillars</div>
+    <div class="tab" data-v="analyzer" onclick="switchTab('analyzer')">Stock Analyzer</div>
+    <div class="tab" data-v="guide" onclick="switchTab('guide')">Guide</div>
+  </div>
+
+  <div class="view active" id="view-numbers"><div class="metric-cols" id="numbersGrid"></div></div>
+
+  <div class="view" id="view-pillars">
+    <div class="pillar-head">
+      <div class="score-ring" id="scoreRing"></div>
+      <div>
+        <div style="font-weight:900;font-size:18px" id="scoreTitle"></div>
+        <div style="color:var(--muted);font-size:13px;max-width:640px" id="scoreDesc">The 8 Pillars are a quick health scan. Checks and X's don't automatically mean good or bad — it's the story they tell together. Click any pillar for what it means.</div>
+      </div>
+    </div>
+    <div class="pillar-grid" id="pillarGrid"></div>
+    <div class="note"><b>Remember:</b> passing pillars ≠ a buy, failing pillars ≠ a sell. The two valuation pillars (5Yr P/E and 5Yr P/FCF) will fail for almost every fast-growing company — that's why the Stock Analyzer exists: to judge whether tomorrow's growth justifies today's price.</div>
+  </div>
+
+  <div class="view" id="view-analyzer">
+    <div class="an-controls">
+      <div class="field"><label>Years of analysis</label>
+        <select id="anYears" onchange="stock.assume.years=+this.value;compute()">
+          <option>5</option><option>7</option><option selected>10</option>
+        </select>
+      </div>
+      <div class="field"><label>Margin of safety</label>
+        <input type="number" id="anMos" style="width:80px" value="0" onchange="stock.assume.mos=+this.value;compute()">
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <div style="color:var(--muted);font-size:12px;max-width:340px;text-align:right">Edit any Low / Mid / High cell — everything recalculates instantly. Reminder: this does not factor in the balance sheet.</div>
+    </div>
+    <div class="an-grid">
+      <div class="panel">
+        <h2>My Assumptions</h2>
+        <div class="sub">Historical values are shown for reference. Enter what you believe the <em>next N years</em> will look like.</div>
+        <table class="assume" id="assumeTable"></table>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <h2>Intrinsic Value</h2>
+          <div class="sub">What the business is worth today for a <span id="retEcho">9%</span> return. Green = below intrinsic value (opportunity), red = above.</div>
+          <div class="results" id="resultsGrid"></div>
+        </div>
+        <div class="panel">
+          <h2>Projection <span style="color:var(--muted);font-weight:600;font-size:12px">(Mid case)</span></h2>
+          <div class="chartbox"><svg class="proj" id="projChart" viewBox="0 0 480 190" preserveAspectRatio="none"></svg></div>
+          <div id="projKV"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-guide">
+    <div class="panel" style="margin-bottom:16px">
+      <h2>The Five Tenets</h2>
+      <div class="sub">The principles behind every analysis in this tool.</div>
+      <div class="tenets">
+        <div class="tenet"><span>1</span>We are investors, not speculators</div>
+        <div class="tenet"><span>2</span>In the short run the market is a voting machine; long run, a weighing machine</div>
+        <div class="tenet"><span>3</span>Every investment is the present value of all future cash flows</div>
+        <div class="tenet"><span>4</span>If we don't understand it, we don't invest in it</div>
+        <div class="tenet"><span>5</span>A great story can become a bad investment if you pay the wrong price</div>
+      </div>
+    </div>
+    <div class="guide-grid" id="guideGrid"></div>
+    <div class="disc">Educational tool for your own research. Not investment advice. Intrinsic-value math is a faithful reconstruction of the Everything Money "project revenue → apply margin → apply a future multiple → discount at your required return" method and may differ slightly from their proprietary software. Always apply your own margin of safety.</div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-h"><h2 id="modalTitle">Edit Stock Data</h2><div class="spacer" style="flex:1"></div><button class="btn sm ghost" onclick="closeEdit()">✕</button></div>
+    <div class="modal-b">
+      <div class="form-grid" id="formGrid"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeEdit()">Cancel</button>
+      <button class="btn primary" onclick="saveEdit()">Save Stock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA MODEL  (all $ figures in BILLIONS, shares in BILLIONS,
+   percentages as whole numbers e.g. 22.5 means 22.5%)
+   ============================================================ */
+const LS_KEY = "via_stocks_v2";
+const LS_SEL = "via_sel_v2";
+
+function palantirSeed(){
+  return {
+    id: "PLTR",
+    ticker: "PLTR", name: "Palantir Technologies",
+    price: 122.17, shares: 2.397,
+    revTTM: 5.22, niTTM: 2.28, fcfTTM: 2.69,
+    avgNI5: 0.47939, avgFCF5: 1.04,
+    rev5yrAgo: 1.54, ni5yrAgo: -0.52, fcf5yrAgo: 0.32, shares5yrAgo: 2.032,
+    roicTTM: 15.30, roic5yr: null,
+    ltl: 0.30, ev: 285.21,
+    divPaid: 0, grossMargin: 84.07,
+    revG1: 67.71, revG5: 34.10, pm1: 43.67, pm5: 16.76, fcfm1: 51.46, fcfm5: 36.49,
+    wk52high: 207.52, wk52low: 88.60,
+    assume:{ years:10, revG:[15,20,30], pm:[30,40,55], fcfm:[30,40,55], pe:[18,22,26], pfcf:[18,22,26], ret:[9,9,9], mos:0 },
+    notes:""
+  };
+}
+function blankStock(){
+  return {
+    id:"NEW"+Math.floor(performance.now()),
+    ticker:"", name:"", price:0, shares:0,
+    revTTM:0, niTTM:0, fcfTTM:0, avgNI5:0, avgFCF5:0,
+    rev5yrAgo:0, ni5yrAgo:0, fcf5yrAgo:0, shares5yrAgo:0,
+    roicTTM:null, roic5yr:null, ltl:0, ev:null, divPaid:0, grossMargin:null,
+    revG1:null, revG5:null, pm1:null, pm5:null, fcfm1:null, fcfm5:null,
+    wk52high:null, wk52low:null,
+    assume:{ years:10, revG:[8,12,18], pm:[15,20,25], fcfm:[15,20,25], pe:[15,20,25], pfcf:[15,20,25], ret:[9,9,9], mos:0 },
+    notes:""
+  };
+}
+
+let stocks = load();
+let selId = localStorage.getItem(LS_SEL);
+if(!stocks.length){ stocks=[palantirSeed()]; save(); }
+if(!selId || !stocks.find(s=>s.id===selId)) selId = stocks[0].id;
+let stock = stocks.find(s=>s.id===selId);
+
+function load(){
+  try{ const raw=localStorage.getItem(LS_KEY); if(raw) return JSON.parse(raw);}catch(e){}
+  return [];
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(stocks)); localStorage.setItem(LS_SEL, stock?stock.id:selId);}catch(e){}
+}
+
+/* ============================================================
+   FORMAT HELPERS
+   ============================================================ */
+function n(x){ return (x===null||x===undefined||x==="") ? null : +x; }
+function isNum(x){ return x!==null && x!==undefined && x!=="" && !isNaN(x); }
+function fmtB(v){ // v in billions -> $X.XXB / $XXX.XXM
+  if(!isNum(v)) return "N/A";
+  const a=Math.abs(v), sign=v<0?"-":"";
+  if(a>=1) return sign+"$"+a.toFixed(2)+"B";
+  return sign+"$"+(a*1000).toFixed(2)+"M";
+}
+function fmtMoney(v,d=2){ return isNum(v) ? "$"+(+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : "N/A"; }
+function fmtX(v,d=2){ return isNum(v) ? (+v).toFixed(d) : "N/A"; }
+function fmtPct(v,d=2){ return isNum(v) ? (+v).toFixed(d)+"%" : "N/A"; }
+
+/* ============================================================
+   DERIVED METRICS
+   ============================================================ */
+function derive(s){
+  const d={};
+  d.mktcap = (isNum(s.price)&&isNum(s.shares)) ? s.price*s.shares : null;
+  d.pe   = (isNum(d.mktcap)&&isNum(s.niTTM)&&s.niTTM!=0) ? d.mktcap/s.niTTM : null;
+  d.pe5  = (isNum(d.mktcap)&&isNum(s.avgNI5)&&s.avgNI5!=0) ? d.mktcap/s.avgNI5 : null;
+  d.ps   = (isNum(d.mktcap)&&isNum(s.revTTM)&&s.revTTM!=0) ? d.mktcap/s.revTTM : null;
+  d.pfcf = (isNum(d.mktcap)&&isNum(s.fcfTTM)&&s.fcfTTM!=0) ? d.mktcap/s.fcfTTM : null;
+  d.pfcf5= (isNum(d.mktcap)&&isNum(s.avgFCF5)&&s.avgFCF5!=0) ? d.mktcap/s.avgFCF5 : null;
+  d.pm   = (isNum(s.niTTM)&&isNum(s.revTTM)&&s.revTTM!=0) ? s.niTTM/s.revTTM*100 : null;
+  d.fcfm = (isNum(s.fcfTTM)&&isNum(s.revTTM)&&s.revTTM!=0) ? s.fcfTTM/s.revTTM*100 : null;
+  d.ev   = isNum(s.ev) ? s.ev : d.mktcap;
+  d.divYield = (isNum(s.divPaid)&&isNum(d.mktcap)&&d.mktcap!=0) ? s.divPaid/d.mktcap*100 : null;
+  d.evEarn = (isNum(d.ev)&&isNum(s.niTTM)&&s.niTTM!=0)? d.ev/s.niTTM : null;
+  d.evFcf  = (isNum(d.ev)&&isNum(s.fcfTTM)&&s.fcfTTM!=0)? d.ev/s.fcfTTM : null;
+  d.evFcf5 = (isNum(d.ev)&&isNum(s.avgFCF5)&&s.avgFCF5!=0)? d.ev/s.avgFCF5 : null;
+  d.netCash = (isNum(d.mktcap)&&isNum(d.ev)) ? d.mktcap - d.ev : null; // + = net cash
+  d.divOfFcf = (isNum(s.divPaid)&&isNum(s.fcfTTM)&&s.fcfTTM!=0)? s.divPaid/s.fcfTTM*100 : null;
+  // growth (absolute $ change over 5yr)
+  d.revGrowth = (isNum(s.revTTM)&&isNum(s.rev5yrAgo)) ? s.revTTM - s.rev5yrAgo : null;
+  d.niGrowth  = (isNum(s.niTTM)&&isNum(s.ni5yrAgo)) ? s.niTTM - s.ni5yrAgo : null;
+  d.fcfGrowth = (isNum(s.fcfTTM)&&isNum(s.fcf5yrAgo)) ? s.fcfTTM - s.fcf5yrAgo : null;
+  d.shareChg  = (isNum(s.shares)&&isNum(s.shares5yrAgo)&&s.shares5yrAgo!=0) ? (s.shares-s.shares5yrAgo)/s.shares5yrAgo*100 : null;
+  d.ltlFcf    = (isNum(s.ltl)&&isNum(s.avgFCF5)&&s.avgFCF5!=0) ? s.ltl/s.avgFCF5 : null;
+  return d;
+}
+
+/* ============================================================
+   8 PILLARS
+   ============================================================ */
+function pillars(s,d){
+  const P=[];
+  P.push({t:"5 Yr P/E Ratio", rule:"< 22.5", val:d.pe5, disp:fmtX(d.pe5), pass:isNum(d.pe5)&&d.pe5<22.5,
+    e:"Market cap ÷ average net income over the last 5 years. A high 5-yr P/E vs the 1-yr P/E usually means earnings are growing fast. It will fail for most great growth companies — not automatically bad."});
+  P.push({t:"5 Yr ROIC", rule:"> 9%", val:d.roic5yr?? (isNum(s.roic5yr)?s.roic5yr:null), disp:fmtPct(s.roic5yr), pass:isNum(s.roic5yr)&&s.roic5yr>9,
+    e:"Return on invested capital over 5 years. High ROIC = the company turns capital into more profit efficiently; a wide moat. You should pay a premium for durably high ROIC."});
+  P.push({t:"Shares Outstanding", rule:"not diluting", val:d.shareChg, disp:isNum(d.shareChg)?(d.shareChg>=0?"+":"")+fmtPct(d.shareChg):"N/A", pass:isNum(d.shareChg)&&d.shareChg<=0,
+    e:"Change in share count over 5 years. Buybacks (a decrease) reward existing owners — but only when the stock is cheap. Heavy dilution (a big increase) works against you."});
+  P.push({t:"Cash Flow Growth 5 Yr", rule:"growing", val:d.fcfGrowth, disp:fmtB(d.fcfGrowth), pass:isNum(d.fcfGrowth)&&d.fcfGrowth>0,
+    e:"Free cash flow today vs 5 years ago. FCF is the lifeblood — it funds dividends, buybacks, debt paydown, reinvestment and acquisitions."});
+  P.push({t:"Net Income Growth 5 Yr", rule:"growing", val:d.niGrowth, disp:fmtB(d.niGrowth), pass:isNum(d.niGrowth)&&d.niGrowth>0,
+    e:"Net income today vs 5 years ago. Growing profit alongside growing revenue is the mark of a strengthening business."});
+  P.push({t:"Revenue Growth 5 Yr", rule:"growing", val:d.revGrowth, disp:fmtB(d.revGrowth), pass:isNum(d.revGrowth)&&d.revGrowth>0,
+    e:"Revenue today vs 5 years ago. Prefer organic growth over growth bought through acquisitions (check net acquisitions)."});
+  P.push({t:"LTL / 5 Yr FCF", rule:"< 5", val:d.ltlFcf, disp:fmtX(d.ltlFcf), pass:isNum(d.ltlFcf)&&d.ltlFcf<5,
+    e:"Long-term liabilities ÷ average 5-yr free cash flow = how many years of cash flow to clear long-term debt. Under 5 is a healthy, resilient balance sheet."});
+  P.push({t:"5 Yr Price / FCF", rule:"< 22.5", val:d.pfcf5, disp:fmtX(d.pfcf5), pass:isNum(d.pfcf5)&&d.pfcf5<22.5,
+    e:"Market cap ÷ average 5-yr free cash flow. Like the 5-yr P/E, a valuation gauge — expect it to fail for expensive, fast-growing names."});
+  return P;
+}
+
+/* ============================================================
+   STOCK ANALYZER
+   ============================================================ */
+function analyze(s,d){
+  const A=s.assume, N=A.years, out=[];
+  const canRev=isNum(s.revTTM), canShares=isNum(s.shares)&&s.shares>0;
+  for(let i=0;i<3;i++){
+    const g=A.revG[i]/100, pm=A.pm[i]/100, fm=A.fcfm[i]/100, pe=A.pe[i], pf=A.pfcf[i], r=A.ret[i]/100;
+    // year-N (terminal) values, for projection + implied future market cap
+    const futRev = canRev? s.revTTM*Math.pow(1+g,N) : null;
+    const futNI  = isNum(futRev)? futRev*pm : null;
+    const futFCF = isNum(futRev)? futRev*fm : null;
+    const futMcE = isNum(futNI)? futNI*pe : null;
+    const futMcF = isNum(futFCF)? futFCF*pf : null;
+    // intrinsic market cap = present value of each year's flow (1..N) + present value of a terminal multiple.
+    // Every investment is the present value of all future cash flows (Tenet 3).
+    function intrMc(margin, mult, rate){
+      if(!canRev) return null;
+      let sum=0;
+      for(let y=1;y<=N;y++){ sum += (s.revTTM*Math.pow(1+g,y)*margin)/Math.pow(1+rate,y); }
+      const term = (s.revTTM*Math.pow(1+g,N)*margin*mult)/Math.pow(1+rate,N);
+      return sum+term;
+    }
+    const intrE = intrMc(pm,pe,r), intrF = intrMc(fm,pf,r);
+    const valE = (isNum(intrE)&&canShares)? intrE/s.shares : null;
+    const valF = (isNum(intrF)&&canShares)? intrF/s.shares : null;
+    // Current-price return = the annual return (IRR) you earn buying at today's price,
+    // i.e. the discount rate at which intrinsic market cap equals today's market cap.
+    let cpRet=null;
+    if(canRev && isNum(d.mktcap) && d.mktcap>0){
+      const target=d.mktcap;
+      const avgIntr = rate=>{ const e=intrMc(pm,pe,rate), f=intrMc(fm,pf,rate);
+        return (isNum(e)&&isNum(f))?(e+f)/2:(e||f); };
+      let lo=-0.9, hi=2.0; // search -90%..+200%; PV decreases as rate rises
+      for(let k=0;k<80;k++){ const mid=(lo+hi)/2; if(avgIntr(mid)>target) lo=mid; else hi=mid; }
+      cpRet=((lo+hi)/2)*100;
+    }
+    const mos = A.mos/100;
+    out.push({futRev,futNI,futFCF,futMcE,valE,valF,cpRet,
+      buyE: isNum(valE)? valE*(1-mos):null,
+      buyF: isNum(valF)? valF*(1-mos):null});
+  }
+  return out;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  renderPicker();
+  const d=derive(stock);
+  renderSrcBanner();
+  renderHead(stock,d);
+  renderNumbers(stock,d);
+  renderPillars(stock,d);
+  renderAnalyzer(stock,d);
+  renderGuide();
+}
+function compute(){ // lighter refresh after assumption edits
+  const d=derive(stock);
+  renderAnalyzerResults(stock,d);
+  renderHead(stock,d);
+  save();
+}
+
+function renderPicker(){
+  const sel=document.getElementById('stockPick');
+  sel.innerHTML = stocks.map(s=>`<option value="${s.id}" ${s.id===stock.id?'selected':''}>${s.ticker||'—'} · ${(s.name||'Untitled').slice(0,26)}</option>`).join('');
+}
+
+function renderHead(s,d){
+  const A=analyze(s,d), mid=A[1];
+  let chip='';
+  if(isNum(mid.valE)&&isNum(s.price)){
+    const up=(mid.valE-s.price)/s.price*100;
+    let label,color;
+    if(up>25){label='UNDERVALUED';color='var(--pass)';}
+    else if(up>=-10){label='FAIRLY VALUED';color='var(--amber)';}
+    else{label='OVERVALUED';color='var(--fail)';}
+    chip=`<div class="verdict-chip" style="color:${color};border-color:${color}">${label} · ${up>=0?'+':''}${up.toFixed(0)}% to mid IV</div>`;
+  }
+  document.getElementById('head').innerHTML=`
+    <div><div class="tk">${s.ticker||'—'}</div><div class="nm">${s.name||'Add a company'}</div></div>
+    <div class="price">${fmtMoney(s.price)}<small>Current price</small></div>
+    <div class="mc">${fmtB(d.mktcap)}<small>Market cap (real price)</small></div>
+    <div class="mc">${fmtB(d.ev)}<small>Enterprise value</small></div>
+    <div class="spacer" style="flex:1"></div>${chip}`;
+}
+
+function mrow(k,v,cls="",hint=""){ return `<div class="mrow"><span class="k">${k}${hint?`<span class="hint">${hint}</span>`:''}</span><span class="v ${cls}">${v}</span></div>`; }
+
+function renderNumbers(s,d){
+  const g=document.getElementById('numbersGrid');
+  const c1=`<div class="mcard"><h3>Company</h3>
+    ${mrow("Market Cap",fmtB(d.mktcap))}
+    ${mrow("Revenue (TTM)",fmtB(s.revTTM))}
+    ${mrow("Net Income (TTM)",fmtB(s.niTTM))}
+    ${mrow("5Yr Avg Net Income",fmtB(s.avgNI5))}
+    ${mrow("P/E (TTM)",fmtX(d.pe))}
+    ${mrow("5Yr P/E",fmtX(d.pe5))}
+    ${mrow("PS Ratio",fmtX(d.ps))}
+    ${mrow("Profit Margin (TTM)",fmtPct(d.pm))}
+    ${mrow("5Yr Profit Margin",fmtPct(s.pm5))}
+    ${mrow("Gross Profit Margin",fmtPct(s.grossMargin))}
+  </div>`;
+  const c2=`<div class="mcard"><h3>Cash Flow &amp; Value</h3>
+    ${mrow("Free Cash Flow (TTM)",fmtB(s.fcfTTM))}
+    ${mrow("5Yr Avg FCF",fmtB(s.avgFCF5))}
+    ${mrow("Price/FCF (TTM)",fmtX(d.pfcf))}
+    ${mrow("5Yr Price/FCF",fmtX(d.pfcf5))}
+    ${mrow("FCF Margin (TTM)",fmtPct(d.fcfm))}
+    ${mrow("Dividend Yield",fmtPct(d.divYield))}
+    ${mrow("Dividends Paid",fmtB(s.divPaid))}
+    ${mrow("Div % of FCF",fmtPct(d.divOfFcf))}
+    ${mrow("Enterprise Value",fmtB(d.ev))}
+    ${mrow("Net Cash / (Debt)",fmtB(d.netCash),isNum(d.netCash)?(d.netCash>=0?'pos':'neg'):'')}
+  </div>`;
+  const c3=`<div class="mcard"><h3>Returns &amp; Multiples</h3>
+    ${mrow("Return on Inv. Capital",fmtPct(s.roicTTM),"","TTM")}
+    ${mrow("5Yr ROIC",fmtPct(s.roic5yr))}
+    ${mrow("EV / Earnings",fmtX(d.evEarn))}
+    ${mrow("EV / FCF",fmtX(d.evFcf))}
+    ${mrow("EV / 5Yr FCF",fmtX(d.evFcf5))}
+    ${mrow("LTL / 5Yr FCF",fmtX(d.ltlFcf))}
+    ${mrow("52 Wk High",fmtMoney(s.wk52high))}
+    ${mrow("52 Wk Low",fmtMoney(s.wk52low))}
+  </div>`;
+  const c4=`<div class="mcard"><h3>Growth (5 Yr)</h3>
+    ${mrow("Revenue Growth",fmtB(d.revGrowth),isNum(d.revGrowth)?(d.revGrowth>0?'pos':'neg'):'')}
+    ${mrow("Net Income Growth",fmtB(d.niGrowth),isNum(d.niGrowth)?(d.niGrowth>0?'pos':'neg'):'')}
+    ${mrow("Cash Flow Growth",fmtB(d.fcfGrowth),isNum(d.fcfGrowth)?(d.fcfGrowth>0?'pos':'neg'):'')}
+    ${mrow("Shares Outstanding Δ",isNum(d.shareChg)?(d.shareChg>=0?'+':'')+fmtPct(d.shareChg):'N/A',isNum(d.shareChg)?(d.shareChg<=0?'pos':'neg'):'')}
+    ${mrow("Rev Growth 1Yr",fmtPct(s.revG1))}
+    ${mrow("Rev Growth 5Yr",fmtPct(s.revG5))}
+    ${mrow("Rev 5 Yrs Ago",fmtB(s.rev5yrAgo))}
+    ${mrow("Net Income 5 Yrs Ago",fmtB(s.ni5yrAgo))}
+  </div>`;
+  g.innerHTML=c1+c2+c3+c4;
+}
+
+function renderPillars(s,d){
+  const P=pillars(s,d);
+  const passed=P.filter(p=>p.pass).length;
+  // ring
+  const pct=passed/8, R=32, C=2*Math.PI*R;
+  const col = passed>=6?'var(--pass)':passed>=4?'var(--amber)':'var(--fail)';
+  document.getElementById('scoreRing').innerHTML=`
+    <svg width="78" height="78"><circle cx="39" cy="39" r="${R}" fill="none" stroke="#2a332a" stroke-width="7"/>
+    <circle cx="39" cy="39" r="${R}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}"/></svg>
+    <div class="num" style="color:${col}">${passed}<small>of 8</small></div>`;
+  document.getElementById('scoreTitle').textContent=`${passed} / 8 Pillars passing`;
+  document.getElementById('pillarGrid').innerHTML=P.map((p,i)=>`
+    <div class="pcard ${p.pass?'pass':'fail'}" id="pc${i}">
+      <div class="ptitle">${p.t}</div>
+      <div class="prule">Pass if ${p.rule}</div>
+      <div class="pval">${p.disp}</div>
+      <div class="badge">${p.pass?'✓':'✕'}</div>
+      <div class="more" onclick="document.getElementById('pc${i}').classList.toggle('open')">What is this? ▾</div>
+      <div class="pexpl">${p.e}</div>
+    </div>`).join('');
+}
+
+const ROWS=[
+  {group:"GROWTH & PROFITABILITY"},
+  {key:"revG", label:"Revenue Growth", sub:"% per year", hist:s=>[s.revG1,s.revG5], suffix:"%"},
+  {key:"pm",   label:"Profit Margin", sub:"net income ÷ revenue", hist:(s,d)=>[d.pm,s.pm5], suffix:"%"},
+  {key:"fcfm", label:"Free Cash Flow Margin", sub:"FCF ÷ revenue", hist:(s,d)=>[d.fcfm,s.fcfm5], suffix:"%"},
+  {group:"VALUATION (10 YEARS FROM NOW)"},
+  {key:"pe",   label:"P/E", sub:"terminal earnings multiple", hist:(s,d)=>[d.pe,d.pe5], suffix:""},
+  {key:"pfcf", label:"P/FCF", sub:"terminal cash-flow multiple", hist:(s,d)=>[d.pfcf,d.pfcf5], suffix:""},
+  {group:"REQUIRED RETURN"},
+  {key:"ret",  label:"Desired Annual Return", sub:"your hurdle rate", hist:()=>[null,null], suffix:"%"},
+];
+
+function renderAnalyzer(s,d){
+  document.getElementById('anYears').value=s.assume.years;
+  document.getElementById('anMos').value=s.assume.mos;
+  const t=document.getElementById('assumeTable');
+  let html=`<thead><tr><th style="text-align:left">Metric</th><th>Hist 1Yr</th><th>Hist 5Yr</th><th class="colL">Low</th><th class="colM">Mid</th><th class="colH">High</th></tr></thead><tbody>`;
+  ROWS.forEach(row=>{
+    if(row.group){ html+=`<tr class="group-head"><td colspan="6">${row.group}</td></tr>`; return; }
+    const h=row.hist(s,d);
+    html+=`<tr>
+      <td class="rowlabel">${row.label}<span class="rl-sub">${row.sub}</span></td>
+      <td class="hist">${isNum(h[0])?(+h[0]).toFixed(1)+row.suffix:'–'}</td>
+      <td class="hist">${isNum(h[1])?(+h[1]).toFixed(1)+row.suffix:'–'}</td>
+      ${[0,1,2].map(i=>`<td><input class="cell-in" type="number" step="any" value="${s.assume[row.key][i]}"
+          oninput="stock.assume['${row.key}'][${i}]=+this.value; compute()"></td>`).join('')}
+    </tr>`;
+  });
+  html+=`</tbody>`;
+  t.innerHTML=html;
+  renderAnalyzerResults(s,d);
+}
+
+function renderAnalyzerResults(s,d){
+  const A=analyze(s,d);
+  document.getElementById('retEcho').textContent=(s.assume.ret[1]||9)+'%';
+  const labels=['Low','Mid','High'], cols=['colL','colM','colH'];
+  document.getElementById('resultsGrid').innerHTML=A.map((r,i)=>{
+    const val=r.valE;
+    const up = (isNum(val)&&isNum(s.price)&&s.price)? (val-s.price)/s.price*100 : null;
+    const valClass = isNum(val)&&isNum(s.price)? (val>=s.price?'val-up':'val-dn'):'';
+    const retClass = isNum(r.cpRet)? (r.cpRet>=(s.assume.ret[i]||9)?'val-up':(r.cpRet>=0?'':'val-dn')):'';
+    const mosLine = (s.assume.mos>0 && isNum(r.buyE))? `<div class="rsmall">Buy ≤ ${fmtMoney(r.buyE)} <span style="color:var(--muted2)">(${s.assume.mos}% MoS)</span></div>`:'';
+    return `<div class="rescard">
+      <div class="rlab ${cols[i]}">${labels[i]}</div>
+      <div class="rval ${valClass}">${fmtMoney(val)}</div>
+      <div class="rsmall">intrinsic value / share</div>
+      ${mosLine}
+      <div class="rret ${retClass}">${isNum(r.cpRet)?(r.cpRet>=0?'+':'')+r.cpRet.toFixed(1)+'%/yr':'N/A'}<div class="rsmall" style="border:none;padding:0">return at today's price</div></div>
+    </div>`;
+  }).join('');
+  renderProjection(s,d,A[1]);
+}
+
+function renderProjection(s,d,mid){
+  const N=s.assume.years, g=s.assume.revG[1]/100, pm=s.assume.pm[1]/100, fm=s.assume.fcfm[1]/100;
+  if(!isNum(s.revTTM)){document.getElementById('projChart').innerHTML='';document.getElementById('projKV').innerHTML='<div style="color:var(--muted2);font-size:12px;padding:8px 0">Enter revenue to see the projection.</div>';return;}
+  const years=[], rev=[], ni=[], fcf=[];
+  for(let y=0;y<=N;y++){ const rv=s.revTTM*Math.pow(1+g,y); years.push(y); rev.push(rv); ni.push(rv*pm); fcf.push(rv*fm); }
+  const W=480,H=190,pad=28, maxV=Math.max(...rev), minY=H-pad, plotH=H-pad*2, plotW=W-pad*2;
+  const X=y=>pad+(y/N)*plotW, Y=v=>minY-(v/maxV)*plotH;
+  function path(arr){ return arr.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' '); }
+  function area(arr){ return path(arr)+` L ${X(N).toFixed(1)} ${minY} L ${pad} ${minY} Z`; }
+  const svg=`
+    <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ec13d" stop-opacity=".28"/><stop offset="1" stop-color="#7ec13d" stop-opacity="0"/></linearGradient></defs>
+    <line x1="${pad}" y1="${minY}" x2="${W-pad}" y2="${minY}" stroke="#2a332a"/>
+    <path d="${area(rev)}" fill="url(#gr)"/>
+    <path d="${path(rev)}" fill="none" stroke="#7ec13d" stroke-width="2.4"/>
+    <path d="${path(fcf)}" fill="none" stroke="#54a0d6" stroke-width="2" stroke-dasharray="1 0"/>
+    <path d="${path(ni)}" fill="none" stroke="#f4b942" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="${pad}" y="${H-6}" fill="#6f796f" font-size="10">Today</text>
+    <text x="${W-pad}" y="${H-6}" fill="#6f796f" font-size="10" text-anchor="end">Year ${N}</text>
+    <text x="${X(N).toFixed(1)}" y="${(Y(rev[N])-6).toFixed(1)}" fill="#7ec13d" font-size="10" text-anchor="end" font-weight="700">${fmtB(rev[N])}</text>`;
+  document.getElementById('projChart').innerHTML=svg;
+  document.getElementById('projKV').innerHTML=`
+    <div class="kv"><span class="k"><span style="color:#7ec13d">●</span> Revenue in year ${N}</span><span class="v">${fmtB(rev[N])}</span></div>
+    <div class="kv"><span class="k"><span style="color:#f4b942">●</span> Net income in year ${N}</span><span class="v">${fmtB(ni[N])}</span></div>
+    <div class="kv"><span class="k"><span style="color:#54a0d6">●</span> Free cash flow in year ${N}</span><span class="v">${fmtB(fcf[N])}</span></div>
+    <div class="kv"><span class="k">Implied future market cap</span><span class="v">${fmtB(mid.futMcE)}</span></div>`;
+}
+
+/* ============================================================
+   GUIDE
+   ============================================================ */
+const GUIDE=[
+  ["Market Cap","The real price of the whole company — shares outstanding × current price. This is what you'd pay to buy the entire business and take it private today. The stock price alone tells you almost nothing without it."],
+  ["Enterprise Value","What it costs to buy the business, pay off its debt, and pocket its cash — the operations alone. When EV is below market cap, the company holds more cash than debt: staying power in a bad economy."],
+  ["Free Cash Flow","Cash from operations minus capital expenditures — the lifeblood. A company can do five things with it: pay a dividend, buy back shares, reinvest, pay down debt, or make acquisitions. If FCF is far below net income, ask why."],
+  ["P/E & 5 Yr P/E","Price ÷ earnings (1-yr and 5-yr average net income). A low P/E isn't automatically cheap and a high P/E isn't automatically expensive — a company growing 20%/yr deserves a higher multiple than one growing 5%/yr."],
+  ["Profit vs Gross Margin","Profit margin is what's left after all costs and taxes. Gross margin is profit on each extra $1 of sales before overhead. High gross margins (software) let profit margins expand fast as the company scales."],
+  ["Return on Invested Capital","How efficiently the company turns capital into profit. 16% ROIC doubles profits in ~4.5 years; 8% takes ~9 years. Durably high ROIC signals a moat and deserves a premium — but giants struggle to reinvest it all."],
+  ["5 Yr Growth Pillars","Revenue, net income and cash flow today vs 5 years ago. Growing all three is the sign of a strengthening business. Prefer organic growth over growth bought through acquisitions."],
+  ["The Stock Analyzer","Project revenue forward with your growth assumption, apply your margin to get future profit/FCF, apply the multiple you'd assign years from now, then discount back at your required return. That's the price to pay — then subtract a margin of safety."],
+];
+function renderGuide(){
+  document.getElementById('guideGrid').innerHTML=GUIDE.map(([h,p])=>`<div class="gcard"><h3>${h}</h3><p>${p}</p></div>`).join('');
+}
+
+/* ============================================================
+   TABS / UI
+   ============================================================ */
+function switchTab(v){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+}
+function selectStock(id){ stock=stocks.find(s=>s.id===id)||stocks[0]; selId=stock.id; save(); render(); }
+
+function duplicateStock(){
+  const copy=JSON.parse(JSON.stringify(stock));
+  copy.id="ST"+Math.floor(performance.now());
+  copy.ticker=(stock.ticker||"COPY")+"-2"; copy.name=(stock.name||"Copy")+" (copy)";
+  stocks.push(copy); stock=copy; selId=copy.id; save(); render(); toast("Duplicated");
+}
+function deleteStock(){
+  if(stocks.length<=1){ toast("Can't delete the only stock"); return; }
+  if(!confirm("Delete "+(stock.ticker||"this stock")+"?")) return;
+  stocks=stocks.filter(s=>s.id!==stock.id); stock=stocks[0]; selId=stock.id; save(); render(); toast("Deleted");
+}
+
+/* ---------- Edit modal ---------- */
+const FIELDS=[
+  ["__s","Identity"],
+  ["ticker","Ticker",""],["name","Company name",""],["price","Current price","$"],["shares","Shares outstanding","B"],
+  ["__s","Income & Cash Flow (TTM, in $B)"],
+  ["revTTM","Revenue (TTM)","$B"],["niTTM","Net income (TTM)","$B"],["fcfTTM","Free cash flow (TTM)","$B"],
+  ["avgNI5","5-Yr avg net income","$B"],["avgFCF5","5-Yr avg free cash flow","$B"],["divPaid","Dividends paid (TTM)","$B"],
+  ["__s","Balance Sheet"],
+  ["ev","Enterprise value","$B"],["ltl","Long-term liabilities","$B"],
+  ["__s","5 Years Ago (for growth pillars, in $B)"],
+  ["rev5yrAgo","Revenue 5 yrs ago","$B"],["ni5yrAgo","Net income 5 yrs ago","$B"],["fcf5yrAgo","Free cash flow 5 yrs ago","$B"],["shares5yrAgo","Shares outstanding 5 yrs ago","B"],
+  ["__s","Returns, Margins & Range"],
+  ["roicTTM","ROIC (TTM)","%"],["roic5yr","5-Yr ROIC","%"],["grossMargin","Gross profit margin","%"],
+  ["pm5","5-Yr profit margin","%"],["wk52high","52-week high","$"],["wk52low","52-week low","$"],
+  ["__s","Historical Growth / Margins (analyzer reference, %)"],
+  ["revG1","Revenue growth 1Yr","%"],["revG5","Revenue growth 5Yr","%"],["fcfm5","5-Yr FCF margin","%"],
+];
+let editingNew=false, editBuffer=null;
+function openEdit(isNew){
+  editingNew=isNew;
+  editBuffer = isNew ? blankStock() : JSON.parse(JSON.stringify(stock));
+  document.getElementById('modalTitle').textContent = isNew ? "Add New Stock" : "Edit "+(stock.ticker||"Stock");
+  const g=document.getElementById('formGrid');
+  g.innerHTML=FIELDS.map(f=>{
+    if(f[0]==="__s") return `<div class="sectlabel">${f[1]}</div>`;
+    const [key,label,unit]=f;
+    const v=editBuffer[key];
+    const type=(key==="ticker"||key==="name")?"text":"number";
+    return `<div class="fg"><label>${label} ${unit?`<span class="u">${unit}</span>`:''}</label>
+      <input id="f_${key}" type="${type}" step="any" value="${v===null||v===undefined?'':v}"></div>`;
+  }).join('');
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeEdit(){ document.getElementById('modalBg').classList.remove('show'); }
+function saveEdit(){
+  FIELDS.forEach(f=>{
+    if(f[0]==="__s")return;
+    const key=f[0], el=document.getElementById('f_'+key); if(!el)return;
+    let val=el.value.trim();
+    if(key==="ticker"||key==="name"){ editBuffer[key]=val; }
+    else { editBuffer[key]= val===''?null:+val; }
+  });
+  if(editBuffer.ticker) editBuffer.ticker=editBuffer.ticker.toUpperCase();
+  if(editingNew){ stocks.push(editBuffer); }
+  else { const idx=stocks.findIndex(s=>s.id===stock.id); stocks[idx]=editBuffer; }
+  stock=editBuffer; selId=stock.id; save(); closeEdit(); render(); toast("Saved");
+}
+
+/* ---------- Export / Import ---------- */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(stocks,null,2)],{type:"application/json"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download="value-analyzer-stocks.json"; a.click(); toast("Exported");
+}
+function importJSON(ev){
+  const file=ev.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)&&arr.length){ stocks=arr; stock=stocks[0]; selId=stock.id; save(); render(); toast("Imported "+arr.length+" stocks"); } }catch(e){ toast("Invalid file"); } };
+  r.readAsText(file); ev.target.value="";
+}
+
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
+
+/* ============================================================
+   LIVE FETCH  — every ticker pulls fresh data from the serverless proxy
+   ============================================================ */
+const API_BASE = (location.protocol==='file:') ? null : '/api/stock';
+const FIELD_LABELS = { ltl:"Long-term liabilities", shares5yrAgo:"Shares 5 yrs ago", roic5yr:"5-Yr ROIC", divPaid:"Dividends paid",
+  avgNI5:"5-Yr avg net income", avgFCF5:"5-Yr avg FCF", rev5yrAgo:"Revenue 5 yrs ago", ni5yrAgo:"Net income 5 yrs ago", fcf5yrAgo:"FCF 5 yrs ago" };
+
+async function fetchTicker(){
+  const el=document.getElementById('tickerIn');
+  const t=(el.value||'').trim().toUpperCase();
+  if(!t){ toast('Type a ticker first'); return; }
+  if(!API_BASE){ toast('Live fetch runs on the deployed URL — open the app there'); return; }
+  const btn=document.getElementById('fetchBtn'); const old=btn.textContent;
+  btn.disabled=true; btn.textContent='…';
+  try{
+    const r=await fetch(API_BASE+'?ticker='+encodeURIComponent(t), {headers:{'accept':'application/json'}});
+    const j=await r.json();
+    if(!j.ok){ toast(j.error || ('Could not fetch '+t)); return; }
+    applyFetched(j);
+    el.value='';
+    toast('Loaded '+t+' — live data');
+  }catch(e){ toast('Network error reaching the data service'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+
+function applyFetched(j){
+  const inc=j.stock;
+  const existing=stocks.find(s=>s.ticker===inc.ticker);
+  let merged;
+  if(existing){
+    // refresh live/estimated values but preserve any manual entries the user made
+    merged=Object.assign({}, existing);
+    for(const k in inc){ if(inc[k]!==null && inc[k]!==undefined && inc[k]!=='') merged[k]=inc[k]; }
+    merged.assume = existing.assume; merged.id = existing.id; merged.notes = existing.notes;
+  } else {
+    merged=Object.assign(blankStock(), inc);
+    merged.id='ST'+Math.floor(performance.now());
+  }
+  merged._meta=j.meta; merged._asOf=j.asOf; merged._provider=j.provider;
+  if(existing){ const i=stocks.findIndex(s=>s.id===existing.id); stocks[i]=merged; }
+  else stocks.push(merged);
+  stock=merged; selId=merged.id; save(); render();
+}
+
+function renderSrcBanner(){
+  const el=document.getElementById('srcBanner');
+  if(!stock._meta){ el.innerHTML=''; return; }
+  const est=Object.keys(stock._meta).filter(k=>stock._meta[k]==='estimated' && isNum(stock[k]));
+  const man=Object.keys(FIELD_LABELS).filter(k=>(stock._meta[k]==='manual') && !isNum(stock[k]));
+  const when = stock._asOf ? new Date(stock._asOf).toLocaleString() : '';
+  let html=`<div class="srcbar"><span class="dot"></span>
+    <span class="lbl">Live from <b>${(stock._provider||'data provider')}</b> · as of <b>${when}</b></span>`;
+  if(est.length) html+=`<span class="chip est" title="${est.map(k=>FIELD_LABELS[k]||k).join(', ')}">~ ${est.length} estimated from growth rates</span>`;
+  if(man.length) html+=`<span class="chip man">${man.length} need manual entry: ${man.map(k=>FIELD_LABELS[k]||k).join(', ')}</span>
+    <button class="btn sm" onclick="openEdit(false)">Fill in →</button>`;
+  html+=`<div style="flex:1"></div><button class="btn sm ghost" onclick="fetchAgain()">⟳ Refresh</button></div>`;
+  el.innerHTML=html;
+}
+function fetchAgain(){ document.getElementById('tickerIn').value=stock.ticker; fetchTicker(); }
+
+render();
+</script>
+</body>
+</html>
