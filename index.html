@@ -826,7 +826,7 @@ function applyFetched(j){
     merged=Object.assign(blankStock(), inc);
     merged.id='ST'+Math.floor(performance.now());
   }
-  merged._meta=j.meta; merged._asOf=j.asOf; merged._provider=j.provider;
+  merged._meta=j.meta; merged._asOf=j.asOf; merged._provider=j.provider; merged._warning=j.warning||null;
   if(existing){ const i=stocks.findIndex(s=>s.id===existing.id); stocks[i]=merged; }
   else stocks.push(merged);
   stock=merged; selId=merged.id; save(); render();
@@ -843,6 +843,7 @@ function renderSrcBanner(){
   if(est.length) html+=`<span class="chip est" title="${est.map(k=>FIELD_LABELS[k]||k).join(', ')}">~ ${est.length} estimated from growth rates</span>`;
   if(man.length) html+=`<span class="chip man">${man.length} need manual entry: ${man.map(k=>FIELD_LABELS[k]||k).join(', ')}</span>
     <button class="btn sm" onclick="openEdit(false)">Fill in →</button>`;
+  if(stock._warning) html+=`<span class="chip est" title="${stock._warning}">⚠ ${stock._warning.length>60?stock._warning.slice(0,60)+'…':stock._warning}</span>`;
   html+=`<div style="flex:1"></div><button class="btn sm ghost" onclick="fetchAgain()">⟳ Refresh</button></div>`;
   el.innerHTML=html;
 }
