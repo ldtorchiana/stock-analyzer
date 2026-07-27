@@ -608,7 +608,7 @@ const ROWS=[
   {key:"revG", label:"Revenue Growth", sub:"% per year", hist:s=>[s.revG1,s.revG5], suffix:"%"},
   {key:"pm",   label:"Profit Margin", sub:"net income ÷ revenue", hist:(s,d)=>[d.pm,s.pm5], suffix:"%"},
   {key:"fcfm", label:"Free Cash Flow Margin", sub:"FCF ÷ revenue", hist:(s,d)=>[d.fcfm,s.fcfm5], suffix:"%"},
-  {group:"VALUATION (10 YEARS FROM NOW)"},
+  {group:"VALUATION (%N YEARS FROM NOW)"},
   {key:"pe",   label:"P/E", sub:"terminal earnings multiple", hist:(s,d)=>[d.pe,d.pe5], suffix:""},
   {key:"pfcf", label:"P/FCF", sub:"terminal cash-flow multiple", hist:(s,d)=>[d.pfcf,d.pfcf5], suffix:""},
   {group:"REQUIRED RETURN"},

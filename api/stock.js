@@ -113,11 +113,14 @@ function sortDesc(reports) {
     (b.fiscalDateEnding || "").localeCompare(a.fiscalDateEnding || ""));
 }
 async function fromAlphaVantage(ticker, key) {
-  const [inc, bal, cf] = await Promise.all([
-    getJSON(`${AV}?function=INCOME_STATEMENT&symbol=${ticker}&apikey=${key}`),
-    getJSON(`${AV}?function=BALANCE_SHEET&symbol=${ticker}&apikey=${key}`),
-    getJSON(`${AV}?function=CASH_FLOW&symbol=${ticker}&apikey=${key}`),
-  ]);
+  // Alpha Vantage's free tier allows only 1 request/second, so these must be
+  // sequential with a gap — NOT Promise.all (which fires all three at once and gets throttled).
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const inc = await getJSON(`${AV}?function=INCOME_STATEMENT&symbol=${ticker}&apikey=${key}`);
+  await sleep(1300);
+  const bal = await getJSON(`${AV}?function=BALANCE_SHEET&symbol=${ticker}&apikey=${key}`);
+  await sleep(1300);
+  const cf = await getJSON(`${AV}?function=CASH_FLOW&symbol=${ticker}&apikey=${key}`);
   // Rate-limit / error responses carry Note/Information and no annualReports
   const income = sortDesc(inc.annualReports);
   const balance = sortDesc(bal.annualReports);
