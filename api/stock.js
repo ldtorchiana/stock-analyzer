@@ -75,8 +75,15 @@ async function fromFinnhub(ticker, key) {
   let fcfTTM = null;
   if (pfcfShare && price !== null && shares !== null) fcfTTM = (price / pfcfShare) * shares;
 
-  let ev = pick(m, ["enterpriseValue", "currentEv"]);
-  if (ev !== null && ev > 100000) ev = ev / 1e9; else if (ev !== null && ev > 1000) ev = ev / 1000;
+  // Enterprise value can arrive in raw dollars, millions, or billions depending on the field.
+  // Pick the scaling whose magnitude is closest to market cap (EV is always within ~2x of it).
+  let ev = null;
+  const evRaw = pick(m, ["enterpriseValue", "currentEv"]);
+  if (evRaw !== null && evRaw > 0 && mktcap !== null && mktcap > 0) {
+    ev = [evRaw, evRaw / 1e3, evRaw / 1e6, evRaw / 1e9]
+      .filter(c => c > 0)
+      .reduce((best, c) => Math.abs(Math.log10(c / mktcap)) < Math.abs(Math.log10(best / mktcap)) ? c : best);
+  }
 
   // fallback estimates (used only if Alpha Vantage is absent / rate-limited)
   const backCast = (now, c, y = 5) => now === null || c === null ? null : now / Math.pow(1 + c / 100, y);
@@ -165,6 +172,10 @@ async function fromAlphaVantage(ticker, key) {
     const tl = num(B0.totalLiabilities), cl = num(B0.totalCurrentLiabilities);
     ltl = tl !== null && cl !== null ? tl - cl : null;
   }
+  // latest debt & cash for an accurate enterprise value (market cap + debt − cash)
+  const debtLatest = num(B0.shortLongTermDebtTotal) !== null ? num(B0.shortLongTermDebtTotal)
+                   : (num(B0.longTermDebt) || 0) + (num(B0.currentDebt) || 0);
+  const cashLatest = num(B0.cashAndCashEquivalentsAtCarryingValue);
 
   const history = {
     avgNI5: toB(avg(niSeries)),
@@ -180,7 +191,7 @@ async function fromAlphaVantage(ticker, key) {
     roic5yr: roicYears.length >= 3 ? avg(roicYears) : null, // need 3+ valid yrs, else "not enough data"
     divPaid: toB(num((cash[0] || {}).dividendPayout)),
   };
-  return { ok: true, history, years: n };
+  return { ok: true, history, years: n, debtLatest: toB(debtLatest), cashLatest: toB(cashLatest) };
 }
 
 export { fromFinnhub, fromAlphaVantage };
@@ -211,6 +222,12 @@ export default async function handler(req, res) {
         if (av.ok) {
           for (const [k, v] of Object.entries(av.history)) {
             if (v !== null && v !== undefined && isFinite(v)) { stock[k] = v; meta[k] = "live"; }
+          }
+          // accurate enterprise value = market cap + total debt − cash
+          const mc = (stock.price !== null && stock.shares !== null) ? stock.price * stock.shares : null;
+          if (mc && Number.isFinite(av.debtLatest) && Number.isFinite(av.cashLatest)) {
+            stock.ev = mc + (av.debtLatest || 0) - (av.cashLatest || 0);
+            meta.ev = "live";
           }
           provider = "finnhub + alphavantage";
         } else {

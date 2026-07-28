@@ -5,33 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Value Investing Analyzer</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap');
   :root{
-    --bg:#0c0f0c;
-    --bg2:#111511;
-    --panel:#171c17;
-    --panel2:#1d241d;
-    --line:#2a332a;
-    --line2:#374237;
-    --green:#7ec13d;
-    --green-d:#6cb52e;
-    --green-l:#9ede55;
-    --label:#8fd14f;
-    --text:#e9ece9;
-    --muted:#96a196;
-    --muted2:#6f796f;
-    --pass:#3ec46d;
-    --fail:#f0544a;
-    --amber:#f4b942;
-    --blue:#54a0d6;
-    --shadow:0 6px 24px rgba(0,0,0,.35);
+    /* Highline Wealth Partners palette (dark dashboard theme) */
+    --bg:#0a1417;
+    --bg2:#0c1a1e;
+    --panel:#102227;
+    --panel2:#163036;
+    --line:#23434a;
+    --line2:#305a63;
+    --green:#00a5b5;      /* Highline Teal — primary brand accent */
+    --green-d:#00808d;
+    --green-l:#3fc7d4;
+    --label:#58c2cf;      /* light teal — field labels */
+    --text:#eaf2f3;
+    --muted:#8ea6ab;
+    --muted2:#5f767b;
+    --pass:#00a5b5;       /* Highline Teal = positive / pass */
+    --fail:#d1573f;       /* Highline Warm Red */
+    --amber:#aeae5c;      /* Highline Sage — caution / estimated / mid */
+    --blue:#6fa6bd;       /* Highline Sky Blue — info / secondary */
+    --shadow:0 6px 24px rgba(0,0,0,.4);
     --radius:12px;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
-    background:radial-gradient(1200px 600px at 70% -10%,#16211477,transparent),var(--bg);
+    background:radial-gradient(1200px 600px at 70% -10%,#0b353b55,transparent),var(--bg);
     color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:'Open Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
     min-height:100vh;
   }
@@ -42,7 +44,7 @@
   .topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#0c0f0cf7,#0c0f0cdd);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   .topbar-inner{max-width:1280px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
-  .brand .logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--green);color:#0b160b;font-weight:900;font-size:15px}
+  .brand .logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--green);color:#042023;font-weight:900;font-size:15px}
   .brand small{display:block;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-top:1px}
   .spacer{flex:1}
 
@@ -51,7 +53,7 @@
   select.pick{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:9px;padding:8px 12px;font-weight:700;min-width:160px;cursor:pointer}
   .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:9px;padding:8px 12px;cursor:pointer;font-weight:600;transition:.15s;white-space:nowrap}
   .btn:hover{background:#26302650;border-color:var(--green-d)}
-  .btn.primary{background:var(--green);color:#0b160b;border-color:var(--green);font-weight:800}
+  .btn.primary{background:var(--green);color:#042023;border-color:var(--green);font-weight:800}
   .btn.primary:hover{background:var(--green-l)}
   .btn.ghost{background:transparent}
   .btn.sm{padding:5px 9px;font-size:12.5px}
@@ -66,8 +68,8 @@
   .srcbar .lbl{color:var(--muted)}
   .srcbar b{color:var(--text)}
   .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid}
-  .chip.est{color:var(--amber);border-color:#5a4a12;background:#2119002e}
-  .chip.man{color:var(--blue);border-color:#123a52;background:#0a1c2a4d}
+  .chip.est{color:var(--amber);border-color:#45451e;background:#26260f2e}
+  .chip.man{color:var(--blue);border-color:#2a5566;background:#10262e66}
 
   /* Header summary card */
   .head{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin:22px 2px 6px}
@@ -119,14 +121,19 @@
   .pcard .ptitle{font-weight:700;font-size:13px;color:var(--text);padding-right:30px}
   .pcard .prule{font-size:11.5px;color:var(--muted2);font-weight:600;margin-top:2px}
   .pcard .pval{font-size:23px;font-weight:900;margin-top:10px;font-variant-numeric:tabular-nums}
-  .pcard .badge{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#0b160b}
+  .pcard .badge{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#042023}
   .pcard.pass .badge{background:var(--pass)}
   .pcard.fail .badge{background:var(--fail)}
   .pcard .pexpl{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.4;display:none}
   .pcard.open .pexpl{display:block}
   .pcard .more{font-size:11px;color:var(--green-l);font-weight:700;cursor:pointer;margin-top:8px;user-select:none}
-  .note{background:#1a140033;border:1px solid #4a3c0f;border-radius:10px;padding:12px 15px;color:#e8d9a8;font-size:13px;margin-top:16px}
+  .note{background:#1a1a0a33;border:1px solid #43431e;border-radius:10px;padding:12px 15px;color:#dcdcb2;font-size:13px;margin-top:16px}
   .note b{color:var(--amber)}
+  .pcard .pwhy{margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+  .pwhy-h{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--green-l);font-weight:800;margin-bottom:5px}
+  .why8{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:12px;padding:15px 20px;margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.6}
+  .why8 b{color:var(--green-l)}
+  .why8 em{color:var(--text);font-style:normal;font-weight:700}
 
   /* Analyzer */
   .an-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
@@ -196,7 +203,7 @@
   .tenet{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:14px;font-weight:700;font-size:13px;text-align:center}
   .tenet span{display:block;color:var(--green);font-size:22px;font-weight:900;margin-bottom:6px}
   .disc{color:var(--muted2);font-size:11.5px;margin-top:22px;text-align:center;line-height:1.5}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#0b160b;font-weight:800;padding:11px 20px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:100;pointer-events:none}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#042023;font-weight:800;padding:11px 20px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:100;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -247,6 +254,9 @@
         <div style="font-weight:900;font-size:18px" id="scoreTitle"></div>
         <div style="color:var(--muted);font-size:13px;max-width:640px" id="scoreDesc">The 8 Pillars are a quick health scan. Checks and X's don't automatically mean good or bad — it's the story they tell together. Click any pillar for what it means.</div>
       </div>
+    </div>
+    <div class="why8">
+      <b>Why these eight?</b> They're the checklist Paul built over years of reading and running his own businesses — the questions he asks first about any company (two were later tweaked to fit publicly traded ones). Treat them as a health scan, not a verdict: all eight green is <em>not</em> a "buy," and all eight red is <em>not</em> a "sell" — Paul owns Carnival at 0/8 for its future potential. The deeper insight: a company <em>controls</em> the operating pillars — growth, profit, cash flow, ROIC, share count, debt — but it does <em>not</em> control the two valuation pillars (5-Yr P/E and 5-Yr P/FCF), which reflect what the market is charging today. So red valuation pillars usually just mean "good business, wrong price — add it to the watchlist and wait." Click <em>Why this pillar</em> on any card for what each one really tells you.
     </div>
     <div class="pillar-grid" id="pillarGrid"></div>
     <div class="note"><b>Remember:</b> passing pillars ≠ a buy, failing pillars ≠ a sell. The two valuation pillars (5Yr P/E and 5Yr P/FCF) will fail for almost every fast-growing company — that's why the Stock Analyzer exists: to judge whether tomorrow's growth justifies today's price.</div>
@@ -353,7 +363,7 @@ function blankStock(){
     roicTTM:null, roic5yr:null, ltl:0, ev:null, divPaid:0, grossMargin:null,
     revG1:null, revG5:null, pm1:null, pm5:null, fcfm1:null, fcfm5:null,
     wk52high:null, wk52low:null,
-    assume:{ years:10, revG:[8,12,18], pm:[15,20,25], fcfm:[15,20,25], pe:[15,20,25], pfcf:[15,20,25], ret:[9,9,9], mos:0 },
+    assume:{ years:10, revG:[7,11,17], pm:[12,18,25], fcfm:[11,17,24], pe:[18,24,30], pfcf:[18,24,30], ret:[9,9,9], mos:0 },
     notes:""
   };
 }
@@ -422,21 +432,29 @@ function derive(s){
 function pillars(s,d){
   const P=[];
   P.push({t:"5 Yr P/E Ratio", rule:"< 22.5", val:d.pe5, disp:fmtX(d.pe5), pass:isNum(d.pe5)&&d.pe5<22.5,
-    e:"Market cap ÷ average net income over the last 5 years. A high 5-yr P/E vs the 1-yr P/E usually means earnings are growing fast. It will fail for most great growth companies — not automatically bad."});
+    e:"Market cap ÷ average net income over the last 5 years. A high 5-yr P/E vs the 1-yr P/E usually means earnings are growing fast. It will fail for most great growth companies — not automatically bad.",
+    why:"Paul starts every stock here. A 1-year P/E around 15 is typical; over five years he allows up to 22.5 to leave room for growth. The point isn't “cheap vs expensive” — a company growing 20% a year deserves a higher multiple than one shrinking 5%, and even a 50 P/E can be justified if profits compound fast for years. It's the opening question about a company, not the answer."});
   P.push({t:"5 Yr ROIC", rule:"> 9%", val:d.roic5yr?? (isNum(s.roic5yr)?s.roic5yr:null), disp:fmtPct(s.roic5yr), pass:isNum(s.roic5yr)&&s.roic5yr>9,
-    e:"Return on invested capital over 5 years. High ROIC = the company turns capital into more profit efficiently; a wide moat. You should pay a premium for durably high ROIC."});
+    e:"Return on invested capital over 5 years. High ROIC = the company turns capital into more profit efficiently; a wide moat. You should pay a premium for durably high ROIC.",
+    why:"There are only two ways to fund a business — debt and equity — and ROIC measures the profit the company squeezes out of both. Durably high ROIC means it can turn money back into more money quickly (a moat), which is why it earns a premium. Munger's point: over the long run a business roughly compounds at its ROIC — but only if you pay a fair price. A 17% ROIC does not mean you earn 17% buying it overpriced."});
   P.push({t:"Shares Outstanding", rule:"not diluting", val:d.shareChg, disp:isNum(d.shareChg)?(d.shareChg>=0?"+":"")+fmtPct(d.shareChg):"N/A", pass:isNum(d.shareChg)&&d.shareChg<=0,
-    e:"Change in share count over 5 years. Buybacks (a decrease) reward existing owners — but only when the stock is cheap. Heavy dilution (a big increase) works against you."});
+    e:"Change in share count over 5 years. Buybacks (a decrease) reward existing owners — but only when the stock is cheap. Heavy dilution (a big increase) works against you.",
+    why:"Paul calls dilution “the silent killer.” A company can grow total profit 50% just by issuing shares, yet your profit-per-share doesn't budge — you simply own a smaller slice. The flip side is powerful: buying back shares while they're cheap shrinks the count and grows both your ownership and the price. Almost no everyday investor checks this, which is exactly why it's an edge."});
   P.push({t:"Cash Flow Growth 5 Yr", rule:"growing", val:d.fcfGrowth, disp:fmtB(d.fcfGrowth), pass:isNum(d.fcfGrowth)&&d.fcfGrowth>0,
-    e:"Free cash flow today vs 5 years ago. FCF is the lifeblood — it funds dividends, buybacks, debt paydown, reinvestment and acquisitions."});
+    e:"Free cash flow today vs 5 years ago. FCF is the lifeblood — it funds dividends, buybacks, debt paydown, reinvestment and acquisitions.",
+    why:"Free cash flow is money in minus money out (operations minus capex) — much harder to fake than net income. Paul wants it higher than five years ago. Key tell: over time cash flow and net income should track each other; if reported profit runs far above cash flow for years, that's a major red flag for accounting games. FCF is the true lifeblood — it funds buybacks, dividends, debt paydown, acquisitions and reinvestment."});
   P.push({t:"Net Income Growth 5 Yr", rule:"growing", val:d.niGrowth, disp:fmtB(d.niGrowth), pass:isNum(d.niGrowth)&&d.niGrowth>0,
-    e:"Net income today vs 5 years ago. Growing profit alongside growing revenue is the mark of a strengthening business."});
+    e:"Net income today vs 5 years ago. Growing profit alongside growing revenue is the mark of a strengthening business.",
+    why:"Revenue is vanity; profit is what you actually own. Paul would rather have a business with $5M revenue and $2M profit than one with $10M revenue and $1M. So the pillar simply asks: is net income higher than five years ago? Then he studies the shape of it — sudden drops often hide one-time write-offs worth understanding before you judge the trend."});
   P.push({t:"Revenue Growth 5 Yr", rule:"growing", val:d.revGrowth, disp:fmtB(d.revGrowth), pass:isNum(d.revGrowth)&&d.revGrowth>0,
-    e:"Revenue today vs 5 years ago. Prefer organic growth over growth bought through acquisitions (check net acquisitions)."});
+    e:"Revenue today vs 5 years ago. Prefer organic growth over growth bought through acquisitions (check net acquisitions).",
+    why:"The simplest screen — was revenue higher five years ago, or today? Growth is the raw fuel for future profit. But the number only opens the real question: was it steady or lumpy, and is it organic or bought through acquisitions? Paul checks the cash-flow statement's investing section — growth you build yourself beats growth you purchase."});
   P.push({t:"LTL / 5 Yr FCF", rule:"< 5", val:d.ltlFcf, disp:fmtX(d.ltlFcf), pass:isNum(d.ltlFcf)&&d.ltlFcf<5,
-    e:"Long-term liabilities ÷ average 5-yr free cash flow = how many years of cash flow to clear long-term debt. Under 5 is a healthy, resilient balance sheet."});
+    e:"Long-term liabilities ÷ average 5-yr free cash flow = how many years of cash flow to clear long-term debt. Under 5 is a healthy, resilient balance sheet.",
+    why:"Debt is risk — for a company exactly like your household. When the economy turns, heavy debt is what breaks a business. So Paul wants total long-term liabilities payable in under five years of average free cash flow. Microsoft sits near 2.4x (very safe); heavily levered names like AT&T run 12–16x, which becomes worrisome the moment growth stalls."});
   P.push({t:"5 Yr Price / FCF", rule:"< 22.5", val:d.pfcf5, disp:fmtX(d.pfcf5), pass:isNum(d.pfcf5)&&d.pfcf5<22.5,
-    e:"Market cap ÷ average 5-yr free cash flow. Like the 5-yr P/E, a valuation gauge — expect it to fail for expensive, fast-growing names."});
+    e:"Market cap ÷ average 5-yr free cash flow. Like the 5-yr P/E, a valuation gauge — expect it to fail for expensive, fast-growing names.",
+    why:"This translates cash flow into a price. Imagine buying the entire company at its market cap — how much cash flow do you get back each year? Paul wants that under ~22.5; in frothy markets it runs high (he once clocked the NASDAQ 100 near 40, “insane”). Like the 5-yr P/E, it fails for expensive fast-growers — which just means “watchlist until the price is lovable,” not “avoid.”"});
   return P;
 }
 
@@ -599,7 +617,7 @@ function renderPillars(s,d){
       <div class="pval">${p.disp}</div>
       <div class="badge">${p.pass?'✓':'✕'}</div>
       <div class="more" onclick="document.getElementById('pc${i}').classList.toggle('open')">What is this? ▾</div>
-      <div class="pexpl">${p.e}</div>
+      <div class="pexpl">${p.e}<div class="pwhy"><span class="pwhy-h">Why this pillar</span>${p.why}</div></div>
     </div>`).join('');
 }
 
@@ -621,7 +639,7 @@ function renderAnalyzer(s,d){
   const t=document.getElementById('assumeTable');
   let html=`<thead><tr><th style="text-align:left">Metric</th><th>Hist 1Yr</th><th>Hist 5Yr</th><th class="colL">Low</th><th class="colM">Mid</th><th class="colH">High</th></tr></thead><tbody>`;
   ROWS.forEach(row=>{
-    if(row.group){ html+=`<tr class="group-head"><td colspan="6">${row.group}</td></tr>`; return; }
+    if(row.group){ html+=`<tr class="group-head"><td colspan="6">${row.group.replace('%N', s.assume.years)}</td></tr>`; return; }
     const h=row.hist(s,d);
     html+=`<tr>
       <td class="rowlabel">${row.label}<span class="rl-sub">${row.sub}</span></td>
@@ -668,20 +686,20 @@ function renderProjection(s,d,mid){
   function area(arr){ return path(arr)+` L ${X(N).toFixed(1)} ${minY} L ${pad} ${minY} Z`; }
   const svg=`
     <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7ec13d" stop-opacity=".28"/><stop offset="1" stop-color="#7ec13d" stop-opacity="0"/></linearGradient></defs>
+      <stop offset="0" stop-color="#00a5b5" stop-opacity=".28"/><stop offset="1" stop-color="#00a5b5" stop-opacity="0"/></linearGradient></defs>
     <line x1="${pad}" y1="${minY}" x2="${W-pad}" y2="${minY}" stroke="#2a332a"/>
     <path d="${area(rev)}" fill="url(#gr)"/>
-    <path d="${path(rev)}" fill="none" stroke="#7ec13d" stroke-width="2.4"/>
-    <path d="${path(fcf)}" fill="none" stroke="#54a0d6" stroke-width="2" stroke-dasharray="1 0"/>
-    <path d="${path(ni)}" fill="none" stroke="#f4b942" stroke-width="2" stroke-dasharray="4 3"/>
+    <path d="${path(rev)}" fill="none" stroke="#00a5b5" stroke-width="2.4"/>
+    <path d="${path(fcf)}" fill="none" stroke="#6fa6bd" stroke-width="2" stroke-dasharray="1 0"/>
+    <path d="${path(ni)}" fill="none" stroke="#aeae5c" stroke-width="2" stroke-dasharray="4 3"/>
     <text x="${pad}" y="${H-6}" fill="#6f796f" font-size="10">Today</text>
     <text x="${W-pad}" y="${H-6}" fill="#6f796f" font-size="10" text-anchor="end">Year ${N}</text>
-    <text x="${X(N).toFixed(1)}" y="${(Y(rev[N])-6).toFixed(1)}" fill="#7ec13d" font-size="10" text-anchor="end" font-weight="700">${fmtB(rev[N])}</text>`;
+    <text x="${X(N).toFixed(1)}" y="${(Y(rev[N])-6).toFixed(1)}" fill="#00a5b5" font-size="10" text-anchor="end" font-weight="700">${fmtB(rev[N])}</text>`;
   document.getElementById('projChart').innerHTML=svg;
   document.getElementById('projKV').innerHTML=`
-    <div class="kv"><span class="k"><span style="color:#7ec13d">●</span> Revenue in year ${N}</span><span class="v">${fmtB(rev[N])}</span></div>
-    <div class="kv"><span class="k"><span style="color:#f4b942">●</span> Net income in year ${N}</span><span class="v">${fmtB(ni[N])}</span></div>
-    <div class="kv"><span class="k"><span style="color:#54a0d6">●</span> Free cash flow in year ${N}</span><span class="v">${fmtB(fcf[N])}</span></div>
+    <div class="kv"><span class="k"><span style="color:#00a5b5">●</span> Revenue in year ${N}</span><span class="v">${fmtB(rev[N])}</span></div>
+    <div class="kv"><span class="k"><span style="color:#aeae5c">●</span> Net income in year ${N}</span><span class="v">${fmtB(ni[N])}</span></div>
+    <div class="kv"><span class="k"><span style="color:#6fa6bd">●</span> Free cash flow in year ${N}</span><span class="v">${fmtB(fcf[N])}</span></div>
     <div class="kv"><span class="k">Implied future market cap</span><span class="v">${fmtB(mid.futMcE)}</span></div>`;
 }
 
