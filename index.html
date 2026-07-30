@@ -165,6 +165,17 @@
   .rescard .rsmall{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
   .rescard .rret{font-size:14px;font-weight:800;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
   .val-up{color:var(--pass)}.val-dn{color:var(--fail)}
+  table.restable{width:100%;border-collapse:collapse;margin-top:2px}
+  table.restable th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:6px 8px;text-align:right;color:var(--muted)}
+  table.restable th:first-child{text-align:left}
+  table.restable td{padding:11px 8px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;border-top:1px solid var(--line);font-size:17px}
+  table.restable td.rowlabel{text-align:left;font-weight:700;color:var(--text);font-size:13.5px}
+  table.restable td.rowlabel .rl-sub{display:block;font-size:10.5px;color:var(--muted2);font-weight:600}
+  table.restable tr.retrow td{border-top:2px solid var(--line2);font-size:14px}
+  table.restable td.mos{color:var(--muted);font-size:14px}
+  table.assume tr.grouprow th{border:none;padding-bottom:2px}
+  table.assume th.ghist,table.assume th.gass{color:var(--green-l);font-size:11px;border-bottom:1px solid var(--line2);letter-spacing:.5px}
+  table.assume td.ro{text-align:center;color:var(--muted2);font-size:11px;font-style:italic}
 
   .kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e251e60;font-size:13px}
   .kv .k{color:var(--muted)}
@@ -363,7 +374,7 @@ function blankStock(){
     roicTTM:null, roic5yr:null, ltl:0, ev:null, divPaid:0, grossMargin:null,
     revG1:null, revG5:null, pm1:null, pm5:null, fcfm1:null, fcfm5:null,
     wk52high:null, wk52low:null,
-    assume:{ years:10, revG:[7,11,17], pm:[12,18,25], fcfm:[11,17,24], pe:[18,24,30], pfcf:[18,24,30], ret:[9,9,9], mos:0 },
+    assume:{ years:10, revG:[9,11,13], pm:[16,18,20], fcfm:[15,17,19], pe:[22,24,26], pfcf:[22,24,26], ret:[9,9,9], mos:0 },
     notes:""
   };
 }
@@ -622,31 +633,38 @@ function renderPillars(s,d){
 }
 
 const ROWS=[
-  {group:"GROWTH & PROFITABILITY"},
-  {key:"revG", label:"Revenue Growth", sub:"% per year", hist:s=>[s.revG1,s.revG5], suffix:"%"},
-  {key:"pm",   label:"Profit Margin", sub:"net income ÷ revenue", hist:(s,d)=>[d.pm,s.pm5], suffix:"%"},
-  {key:"fcfm", label:"Free Cash Flow Margin", sub:"FCF ÷ revenue", hist:(s,d)=>[d.fcfm,s.fcfm5], suffix:"%"},
+  {group:"QUALITY & GROWTH"},
+  {key:"roic", label:"ROIC", sub:"return on invested capital", hist:(s,d)=>[s.roicTTM,s.roic5yr,null], suffix:"%", readonly:true},
+  {key:"revG", label:"Revenue Growth", sub:"% per year", hist:s=>[s.revG1,s.revG5,null], suffix:"%"},
+  {key:"pm",   label:"Profit Margin", sub:"net income ÷ revenue", hist:(s,d)=>[d.pm,s.pm5,null], suffix:"%"},
+  {key:"fcfm", label:"Free Cash Flow Margin", sub:"FCF ÷ revenue", hist:(s,d)=>[d.fcfm,s.fcfm5,null], suffix:"%"},
   {group:"VALUATION (%N YEARS FROM NOW)"},
-  {key:"pe",   label:"P/E", sub:"terminal earnings multiple", hist:(s,d)=>[d.pe,d.pe5], suffix:""},
-  {key:"pfcf", label:"P/FCF", sub:"terminal cash-flow multiple", hist:(s,d)=>[d.pfcf,d.pfcf5], suffix:""},
+  {key:"pe",   label:"P/E", sub:"terminal earnings multiple", hist:(s,d)=>[d.pe,d.pe5,null], suffix:""},
+  {key:"pfcf", label:"P/FCF", sub:"terminal cash-flow multiple", hist:(s,d)=>[d.pfcf,d.pfcf5,null], suffix:""},
   {group:"REQUIRED RETURN"},
-  {key:"ret",  label:"Desired Annual Return", sub:"your hurdle rate", hist:()=>[null,null], suffix:"%"},
+  {key:"ret",  label:"Desired Annual Return", sub:"your hurdle rate", hist:()=>[null,null,null], suffix:"%"},
 ];
 
 function renderAnalyzer(s,d){
   document.getElementById('anYears').value=s.assume.years;
   document.getElementById('anMos').value=s.assume.mos;
   const t=document.getElementById('assumeTable');
-  let html=`<thead><tr><th style="text-align:left">Metric</th><th>Hist 1Yr</th><th>Hist 5Yr</th><th class="colL">Low</th><th class="colM">Mid</th><th class="colH">High</th></tr></thead><tbody>`;
+  let html=`<thead>
+    <tr class="grouprow"><th></th><th colspan="3" class="ghist">Historical</th><th colspan="3" class="gass">My Assumptions</th></tr>
+    <tr><th style="text-align:left">Metric</th><th>1 Yr</th><th>5 Yr</th><th>10 Yr</th><th class="colL">Low</th><th class="colM">Mid</th><th class="colH">High</th></tr>
+  </thead><tbody>`;
   ROWS.forEach(row=>{
-    if(row.group){ html+=`<tr class="group-head"><td colspan="6">${row.group.replace('%N', s.assume.years)}</td></tr>`; return; }
+    if(row.group){ html+=`<tr class="group-head"><td colspan="7">${row.group.replace('%N', s.assume.years)}</td></tr>`; return; }
     const h=row.hist(s,d);
+    const hc = v => `<td class="hist">${isNum(v)?(+v).toFixed(1)+row.suffix:'–'}</td>`;
+    const inputs = row.readonly
+      ? `<td class="ro" colspan="3">reference only</td>`
+      : [0,1,2].map(i=>`<td><input class="cell-in" type="number" step="any" value="${s.assume[row.key][i]}"
+          oninput="stock.assume['${row.key}'][${i}]=+this.value; compute()"></td>`).join('');
     html+=`<tr>
       <td class="rowlabel">${row.label}<span class="rl-sub">${row.sub}</span></td>
-      <td class="hist">${isNum(h[0])?(+h[0]).toFixed(1)+row.suffix:'–'}</td>
-      <td class="hist">${isNum(h[1])?(+h[1]).toFixed(1)+row.suffix:'–'}</td>
-      ${[0,1,2].map(i=>`<td><input class="cell-in" type="number" step="any" value="${s.assume[row.key][i]}"
-          oninput="stock.assume['${row.key}'][${i}]=+this.value; compute()"></td>`).join('')}
+      ${hc(h[0])}${hc(h[1])}${hc(h[2])}
+      ${inputs}
     </tr>`;
   });
   html+=`</tbody>`;
@@ -658,20 +676,21 @@ function renderAnalyzerResults(s,d){
   const A=analyze(s,d);
   document.getElementById('retEcho').textContent=(s.assume.ret[1]||9)+'%';
   const labels=['Low','Mid','High'], cols=['colL','colM','colH'];
-  document.getElementById('resultsGrid').innerHTML=A.map((r,i)=>{
-    const val=r.valE;
-    const up = (isNum(val)&&isNum(s.price)&&s.price)? (val-s.price)/s.price*100 : null;
-    const valClass = isNum(val)&&isNum(s.price)? (val>=s.price?'val-up':'val-dn'):'';
-    const retClass = isNum(r.cpRet)? (r.cpRet>=(s.assume.ret[i]||9)?'val-up':(r.cpRet>=0?'':'val-dn')):'';
-    const mosLine = (s.assume.mos>0 && isNum(r.buyE))? `<div class="rsmall">Buy ≤ ${fmtMoney(r.buyE)} <span style="color:var(--muted2)">(${s.assume.mos}% MoS)</span></div>`:'';
-    return `<div class="rescard">
-      <div class="rlab ${cols[i]}">${labels[i]}</div>
-      <div class="rval ${valClass}">${fmtMoney(val)}</div>
-      <div class="rsmall">intrinsic value / share</div>
-      ${mosLine}
-      <div class="rret ${retClass}">${isNum(r.cpRet)?(r.cpRet>=0?'+':'')+r.cpRet.toFixed(1)+'%/yr':'N/A'}<div class="rsmall" style="border:none;padding:0">return at today's price</div></div>
-    </div>`;
-  }).join('');
+  const priceCell = v => `<td class="${isNum(v)&&isNum(s.price)?(v>=s.price?'val-up':'val-dn'):''}">${fmtMoney(v)}</td>`;
+  const retCell = (r,i) => `<td class="${isNum(r)?(r>=(s.assume.ret[i]||9)?'val-up':(r>=0?'':'val-dn')):''}">${isNum(r)?(r>=0?'+':'')+r.toFixed(1)+'%/yr':'N/A'}</td>`;
+  const mosRow = s.assume.mos>0
+    ? `<tr><td class="rowlabel">Buy Below<span class="rl-sub">${s.assume.mos}% margin of safety</span></td>${A.map(r=>`<td class="mos">${fmtMoney(r.buyE)}</td>`).join('')}</tr>`
+    : '';
+  document.getElementById('resultsGrid').innerHTML=`
+    <table class="restable">
+      <thead><tr><th></th>${labels.map((l,i)=>`<th class="${cols[i]}">${l}</th>`).join('')}</tr></thead>
+      <tbody>
+        <tr><td class="rowlabel">Multiple of Earnings Value<span class="rl-sub">terminal P/E method</span></td>${A.map(r=>priceCell(r.valE)).join('')}</tr>
+        <tr><td class="rowlabel">Discounted Cash Flow Value<span class="rl-sub">terminal P/FCF method</span></td>${A.map(r=>priceCell(r.valF)).join('')}</tr>
+        ${mosRow}
+        <tr class="retrow"><td class="rowlabel">Current Price Return<span class="rl-sub">annualized at today's price</span></td>${A.map((r,i)=>retCell(r.cpRet,i)).join('')}</tr>
+      </tbody>
+    </table>`;
   renderProjection(s,d,A[1]);
 }
 
