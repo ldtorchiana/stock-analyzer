@@ -641,19 +641,29 @@ function renderPillars(s,d){
    ============================================================ */
 function projectAssumptions(s,d){
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v)), r=Math.round;
-  // Revenue growth: real 5-yr revenue CAGR (statement-based), then decelerated for the forward view
-  let g;
-  if(isNum(s.revTTM)&&isNum(s.rev5yrAgo)&&s.rev5yrAgo>0) g=(Math.pow(s.revTTM/s.rev5yrAgo,1/5)-1)*100;
-  else if(isNum(s.revG5)) g=s.revG5; else if(isNum(s.revG1)) g=s.revG1; else g=8;
+  // Revenue growth: blend the reliable 5-yr revenue CAGR with recent momentum (1-yr),
+  // so accelerating companies aren't under-projected, then decelerate for the forward decade.
+  let trailing=null;
+  if(isNum(s.revTTM)&&isNum(s.rev5yrAgo)&&s.rev5yrAgo>0) trailing=(Math.pow(s.revTTM/s.rev5yrAgo,1/5)-1)*100;
+  else if(isNum(s.revG5)) trailing=s.revG5;
+  const recent = (isNum(s.revG1)&&s.revG1>-20&&s.revG1<80)? s.revG1 : null; // guard glitchy feed values
+  let g = (trailing!==null&&recent!==null) ? 0.4*recent+0.6*trailing
+        : (trailing!==null?trailing : (recent!==null?recent:8));
   g=clamp(g,-5,60); // cap glitchy/unsustainable inputs
-  const decel = g>40?0.45 : g>25?0.6 : g>15?0.72 : g>8?0.85 : 1;
+  const decel = g>40?0.5 : g>25?0.62 : g>15?0.75 : g>8?0.88 : 1;
   const gMid = clamp(r(g*decel), 2, 25);
-  // Profit margin: recent net margin, capped below gross margin (net can't exceed gross)
   const gross = isNum(s.grossMargin)? s.grossMargin : null;
-  const pmBase = isNum(d.pm)? d.pm : (isNum(s.pm5)?s.pm5:12);
+  // Profit margin: floor at the 5-yr average so a depressed TTM (write-offs, cyclical trough)
+  // doesn't crush earnings power; allow modest upside when margins are expanding.
+  const pmTTM=isNum(d.pm)?d.pm:null, pm5=isNum(s.pm5)?s.pm5:null;
+  let pmBase = (pmTTM!==null&&pm5!==null) ? Math.max(pm5,(pmTTM+pm5)/2)
+             : (pm5!==null?pm5 : (pmTTM!==null?pmTTM:10));
   const pmMid = clamp(r(pmBase), 2, gross? Math.max(4,gross-2) : 55);
-  // FCF margin: recent FCF margin, near profit margin
-  const fcfBase = isNum(d.fcfm)? d.fcfm : (isNum(s.fcfm5)?s.fcfm5:pmMid);
+  // FCF margin: same normalization; if the FCF reading is thin/one-off vs earnings, use the profit-margin level.
+  const fcfTTM=isNum(d.fcfm)?d.fcfm:null, fcfm5=isNum(s.fcfm5)?s.fcfm5:null;
+  let fcfBase = (fcfTTM!==null&&fcfm5!==null) ? Math.max(fcfm5,(fcfTTM+fcfm5)/2)
+              : (fcfm5!==null?fcfm5 : (fcfTTM!==null?fcfTTM:pmMid));
+  if(fcfBase < pmMid*0.5) fcfBase = pmMid;
   const fcfMid = clamp(r(fcfBase), 2, gross? Math.max(4,gross-1) : 55);
   // Terminal multiple: baseline 16, premium for quality (ROIC) and growth, capped at 30
   const roic = isNum(s.roic5yr)?s.roic5yr:(isNum(s.roicTTM)?s.roicTTM:null);
