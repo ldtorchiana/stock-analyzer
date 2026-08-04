@@ -283,8 +283,12 @@
       <div class="field"><label>Margin of safety</label>
         <input type="number" id="anMos" style="width:80px" value="0" onchange="stock.assume.mos=+this.value;compute()">
       </div>
+      <div class="field"><label>&nbsp;</label>
+        <button class="btn primary sm" style="padding:8px 14px" onclick="autoProject()"
+          title="Generate Low/Mid/High from this company's own financials: decelerated 5-yr revenue CAGR, recent margins (capped by gross), and a quality-based terminal multiple. A starting point — tweak any cell after.">⚡ Auto-project</button>
+      </div>
       <div class="spacer" style="flex:1"></div>
-      <div style="color:var(--muted);font-size:12px;max-width:340px;text-align:right">Edit any Low / Mid / High cell — everything recalculates instantly. Reminder: this does not factor in the balance sheet.</div>
+      <div style="color:var(--muted);font-size:12px;max-width:340px;text-align:right">Fetched stocks are auto-projected from their financials. Edit any cell to override — everything recalculates instantly. Reminder: this does not factor in the balance sheet.</div>
     </div>
     <div class="an-grid">
       <div class="panel">
@@ -632,6 +636,42 @@ function renderPillars(s,d){
     </div>`).join('');
 }
 
+/* ============================================================
+   AUTO-PROJECT — derive Low/Mid/High assumptions from a company's own financials
+   ============================================================ */
+function projectAssumptions(s,d){
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v)), r=Math.round;
+  // Revenue growth: real 5-yr revenue CAGR (statement-based), then decelerated for the forward view
+  let g;
+  if(isNum(s.revTTM)&&isNum(s.rev5yrAgo)&&s.rev5yrAgo>0) g=(Math.pow(s.revTTM/s.rev5yrAgo,1/5)-1)*100;
+  else if(isNum(s.revG5)) g=s.revG5; else if(isNum(s.revG1)) g=s.revG1; else g=8;
+  g=clamp(g,-5,60); // cap glitchy/unsustainable inputs
+  const decel = g>40?0.45 : g>25?0.6 : g>15?0.72 : g>8?0.85 : 1;
+  const gMid = clamp(r(g*decel), 2, 25);
+  // Profit margin: recent net margin, capped below gross margin (net can't exceed gross)
+  const gross = isNum(s.grossMargin)? s.grossMargin : null;
+  const pmBase = isNum(d.pm)? d.pm : (isNum(s.pm5)?s.pm5:12);
+  const pmMid = clamp(r(pmBase), 2, gross? Math.max(4,gross-2) : 55);
+  // FCF margin: recent FCF margin, near profit margin
+  const fcfBase = isNum(d.fcfm)? d.fcfm : (isNum(s.fcfm5)?s.fcfm5:pmMid);
+  const fcfMid = clamp(r(fcfBase), 2, gross? Math.max(4,gross-1) : 55);
+  // Terminal multiple: baseline 16, premium for quality (ROIC) and growth, capped at 30
+  const roic = isNum(s.roic5yr)?s.roic5yr:(isNum(s.roicTTM)?s.roicTTM:null);
+  const prem = isNum(roic)? (roic>20?8:roic>12?5:roic>9?3:0) : 2;
+  const gb = gMid>15?4:gMid>10?2:0;
+  const peMid = clamp(16+prem+gb, 12, 30);
+  const band = m => [Math.max(1,r(m)-2), r(m), r(m)+2];
+  s.assume = Object.assign({}, s.assume, {
+    revG:band(gMid), pm:band(pmMid), fcfm:band(fcfMid), pe:band(peMid), pfcf:band(peMid), ret:[9,9,9]
+  });
+}
+function autoProject(){
+  if(!isNum(stock.revTTM)){ toast('Fetch a stock first'); return; }
+  projectAssumptions(stock, derive(stock));
+  save(); render(); switchTab('analyzer');
+  toast('Assumptions projected from '+stock.ticker+"'s financials");
+}
+
 const ROWS=[
   {group:"QUALITY & GROWTH"},
   {key:"roic", label:"ROIC", sub:"return on invested capital", hist:(s,d)=>[s.roicTTM,s.roic5yr,null], suffix:"%", readonly:true},
@@ -862,6 +902,7 @@ function applyFetched(j){
   } else {
     merged=Object.assign(blankStock(), inc);
     merged.id='ST'+Math.floor(performance.now());
+    projectAssumptions(merged, derive(merged)); // auto-project assumptions from the new company's financials
   }
   merged._meta=j.meta; merged._asOf=j.asOf; merged._provider=j.provider; merged._warning=j.warning||null;
   if(existing){ const i=stocks.findIndex(s=>s.id===existing.id); stocks[i]=merged; }
